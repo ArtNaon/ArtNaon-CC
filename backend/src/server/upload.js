@@ -4,8 +4,8 @@ const {Storage} = require("@google-cloud/storage");
 const storage = new Storage();
 
 // Membuat nama bucket
-const bucketName = 'artnaon-bucket223' 
-const filePath = './backend/src/server/img/bangkit.png'
+const bucketName = 'bucket-name' 
+const filePath = 'image.png'
 
 // Fungsi untuk membuat bucket jika tidak ditemukan.
 async function getOrCreateBucket(bucketName) {

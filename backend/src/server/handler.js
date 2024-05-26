@@ -1,53 +1,47 @@
-const { Storage } = require("@google-cloud/storage");
+const { Storage } = require('@google-cloud/storage');
 
-// Membuat Client
 const storage = new Storage();
+const bucketName = 'artnaon-bucket-991';
 
-// Membuat nama bucket
-const bucketName = 'artnaon-bucket';
+const uploadHandler = async (file) => {
+    const getOrCreateBucket = async (bucketName) => {
+        const bucket = storage.bucket(bucketName);
+        try {
+            const [metadata] = await bucket.getMetadata();
+            console.log(`Bucket ${metadata.name} sudah tersedia!`);
+            return bucket;
+        } catch (error) {
+            const optionsCreateBucket = {
+                location: 'ASIA-SOUTHEAST2'
+            };
+            await storage.createBucket(bucketName, optionsCreateBucket);
+            console.log(`${bucketName} bucket created successfully`);
+            return bucket;
+        }
+    };
 
-// Fungsi untuk membuat bucket jika tidak ditemukan.
-const getOrCreateBucket = async (bucketName) => {
-    const bucket = storage.bucket(bucketName);
+    const bucket = await getOrCreateBucket(bucketName);
+    const customMetadata = {
+        contentType: file.hapi.headers['content-type'],
+        metadata: {
+            type: "header-logo"
+        }
+    };
+
+    const optionsUploadObject = {
+        destination: 'bangkit.png',
+        metadata: customMetadata
+    };
+
     try {
-        // Mendapatkan informasi bucket jika ada.
-        const [metadata] = await bucket.getMetadata();
-        console.log(`Bucket ${metadata.name} sudah tersedia!`);
-        return bucket;
-    } catch (error) {
-        const optionsCreateBucket = {
-            location: 'ASIA-SOUTHEAST2',
-        };
-        // Create Bucket
-        await storage.createBucket(bucketName, optionsCreateBucket);
-        console.log(`${bucketName} bucket created successfully`);
-        return bucket;
-    }
-};
-
-// Fungsi upload single object
-const uploadHandler = async (request, h) => {
-    const filePath = '../src/earbuds.jpg';
-    try {
-        const customMetadata = {
-            contentType: 'image/jpeg',
-            metadata: {
-                type: "header-logo",
-            },
-        };
-
-        const optionsUploadObject = {
-            destination: 'dicoding-header-logo.png',
-            metadata: customMetadata,
-        };
-
-        const bucket = await getOrCreateBucket(bucketName);
-        await storage.bucket(bucketName).upload(filePath.path, optionsUploadObject);
-        console.log(`${filePath.path} uploaded to ${bucketName} bucket`);
-        return h.response(`${filePath.path} uploaded successfully`).code(200);
+        const fileBuffer = file._data;
+        const fileUpload = bucket.file('bangkit.png');
+        await fileUpload.save(fileBuffer, optionsUploadObject);
+        console.log(`${file.hapi.filename} uploaded to ${bucketName} bucket`);
+        return `${file.hapi.filename} uploaded to ${bucketName} bucket`;
     } catch (uploadError) {
-        console.error(`Gagal mengupload ${filePath.path}:`, uploadError.message);
-        return h.response(`Gagal mengupload ${filePath.path}: ${uploadError.message}`).code(500);
+        console.error(`Gagal mengupload ${file.hapi.filename}:`, uploadError.message);
+        throw new Error(`Gagal mengupload ${file.hapi.filename}: ${uploadError.message}`);
     }
 };
 
