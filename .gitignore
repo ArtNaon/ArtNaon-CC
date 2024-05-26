@@ -1,0 +1,5 @@
+backend/node_modules
+backend/.dockerignore
+backend/.env
+
+mode/.dockerignore
