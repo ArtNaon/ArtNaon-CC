@@ -1,12 +1,12 @@
 const {Storage} = require('@google-cloud/storage');
 
 const storage = new Storage();
-const bucketName = 'artnaon-bucket'
+const bucketName = 'artnaon-bucket223'
 const fileName = 'bangkit.png'
 
 async function download() {
     const options = {
-        destination: './img/bangkit.png'
+        destination: './backend/src/server/img/bangkit.png'
     }
 
     await storage.bucket(bucketName).file(fileName).download(options)
