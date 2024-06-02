@@ -1,30 +1,13 @@
 const { 
-    registerHandler, 
-    loginHandler, 
-    forgotPassword,
     registerUser,
     loginUser,
     resetPassword,
     uploadPainting,
-    getPaintings
+    getPaintings,
+    deletePainting
 } = require('./handler');
 
 const routes = [
-    {
-        method: 'POST',
-        path: '/firebaseRegister',
-        handler: registerHandler,
-    },
-    {
-        method: 'POST',
-        path: '/firebaseLogin',
-        handler: loginHandler,
-    },
-    {
-        method: 'POST',
-        path: '/firebasePassword',
-        handler: forgotPassword,
-    }, 
     {
         method: 'POST',
         path: '/register',
@@ -57,6 +40,11 @@ const routes = [
         method: 'GET',
         path: '/paintings/{userId}',
         handler: getPaintings,
+      },
+      {
+        method: 'POST',
+        path: '/delete',
+        handler: deletePainting,
       },
 ];
 
