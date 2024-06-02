@@ -26,3 +26,14 @@
   "email": "artnaon@bangkit.academy,
 }
 ```
+
+## Login
+- Method
+
+  POST
+
+- URL
+
+  /login
+
+  - Response
