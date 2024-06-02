@@ -156,7 +156,7 @@ const resetPassword = async (request, h) => {
             android: {
                 packageName: 'com.example.android',
                 installApp: true,
-                minimumVersion: '12'
+                minimumVersion: '12' 
             },
         };
         // Configure the email transporter using nodemailer
