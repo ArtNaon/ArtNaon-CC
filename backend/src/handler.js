@@ -177,11 +177,34 @@ const loginUser = async (request, h) => {
   }
 };
 
+const resetPassword = async (request, h) => {
+    try {
+        const { email, newPassword } = request.payload;
+        const result = await connection.query('SELECT id FROM users WHERE email = ?', [email]);
+  
+        if (result.rowCount === 0) {
+            return h.response({ message: 'Email not found' }).code(404);
+        }
+  
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await connection.query('UPDATE users SET password = ? WHERE email = ?', [hashedPassword, email]);
+  
+        return h.response({ message: 'Password reset successfully' }).code(200);
+    } catch (err) {
+        const response = h.response({
+            status: 'fail',
+            message: err.message,
+        });
+        response.code(500);
+        return response;
+    }
+};
+
 const storage = new Storage();
 const bucket = storage.bucket('user-paintings');
 
 const uploadPainting = async (request, h) => {
-    const { userId } = request.payload;
+    const { userId, genre, description } = request.payload;
     const file = request.payload.painting;
 
     const blobName = `${uuid.v4()}-${file.hapi.filename}`;
@@ -189,39 +212,35 @@ const uploadPainting = async (request, h) => {
     const blobStream = blob.createWriteStream({
       resumable: false,
       gzip: true
-    });
+    }); 
 
     try {
-      await new Promise((resolve, reject) => {
-        blobStream.on('finish', resolve);
-        blobStream.on('error', reject);
-        blobStream.end(file._data);
-      });
+        await new Promise((resolve, reject) => {
+            blobStream.on('finish', resolve);
+            blobStream.on('error', reject);
+            blobStream.end(file._data);
+        });
       
-      const publicUrl = `https://storage.googleapis.com/${bucket.name}/${blobName}`;
-      const query = 'INSERT INTO paintings (user_id, image_url, upload_timestamp) VALUES (?, ?, NOW())';
+        const publicUrl = `https://storage.googleapis.com/${bucket.name}/${blobName}`;
+        const query = 'INSERT INTO paintings (user_id, image_url, genre, description, upload_timestamp) VALUES (?, ?, ?, ?, NOW())';
 
-      await connection.query(query, [userId, publicUrl]);
+        await connection.query(query, [userId, publicUrl, genre, description]);
 
-      return h.response({ message: 'Painting uploaded successfully', url: publicUrl }).code(201);
+        return h.response({ message: 'Painting uploaded successfully', url: publicUrl }).code(201);
     } catch (err) {
-      return h.response({ message: 'Error uploading painting or saving metadata', error: err.message }).code(500);
+        return h.response({ message: 'Error uploading painting or saving metadata', error: err.message }).code(500);
     }
 };
 
 const getPaintings = async (request, h) => {
     const { userId } = request.params;
-
-    const connection = await mysql.createConnection();
     try {
-      const [rows] = await connection.query('SELECT * FROM paintings WHERE user_id = ? ORDER BY upload_timestamp DESC', [userId]);
-      return h.response(rows).code(200);
+      const [rows] = await connection.query('SELECT image_url FROM paintings WHERE user_id = ? ORDER BY upload_timestamp DESC', [userId]);
+      return h.response(rows.map(row => row.image_url)).code(200);
     } catch (err) {
-      return h.response({ message: 'Error fetching paintings' }).code(500);
-    } finally {
-      connection.release();
+      return h.response({ message: 'Error fetching paintings', error: err.message }).code(500);
     }
-};
+  };
 
 module.exports = {
   registerHandler,
@@ -229,6 +248,7 @@ module.exports = {
   forgotPassword,
   registerUser,
   loginUser,
+  resetPassword,
   uploadPainting,
   getPaintings
 };
