@@ -221,7 +221,13 @@ const uploadPainting = async (request, h) => {
         const { userId, genre, description } = request.payload;
         const file = request.payload.painting;
 
-        const blobName = `${uuid.v4()}-${file.hapi.filename}`;
+        // Query to get the user's name
+        const user = await connection.query('SELECT * FROM users WHERE id = ?', [userId]);
+        if (user.length === 0) {
+            throw new Error('User not found');
+        }
+
+        const blobName = `${user.name}/${uuid.v4()}-${file.hapi.filename}`;
         const blob = userBucket.file(blobName);
         const blobStream = blob.createWriteStream({
             resumable: false,
@@ -272,7 +278,7 @@ const userPaintings = async (request, h) => {
         const [rows] = await connection.query('SELECT image_url FROM paintings WHERE user_id = ? ORDER BY upload_timestamp DESC', [userId]);
         const response = h.response({
             status: 'success',
-            message: 'Post deleted successfully',
+            message: 'User paintings fetched successfully',
             data: rows.map(row => row.image_url)
         });
         response.code(200);
@@ -291,22 +297,25 @@ const userPaintings = async (request, h) => {
 // Delete painting from Google Cloud Storage and MySQL
 const deletePainting = async (request, h) => {
     try {
-        const { imageUrl } = request.params;
-        const result = await connection.query('SELECT id FROM paintings WHERE image_url = ?', [imageUrl]);
-        if (result.rowCount === 0) {
-            return h.response({ message: 'Painting not found' }).code(404);
-        }
-        const paintingId = result.rows[0].id;
-        await connection.query('DELETE FROM paintings WHERE id = ?', [paintingId]);
+        const { imageUrl } = request.payload;
+
+        // Extracting the blob name from the image URL
+        const blobName = imageUrl.replace(`https://storage.googleapis.com/${userBucket.name}/`, '');
+
+        // Delete the file from the bucket
+        await userBucket.file(blobName).delete();
+
+        // Query to delete the painting record from the database based on the image URL
+        const deleteQuery = 'DELETE FROM paintings WHERE image_url = ?';
+        await connection.query(deleteQuery, [imageUrl]);
 
         const response = h.response({
             status: 'success',
-            message: 'Post deleted successfully',
+            message: 'Painting deleted successfully'
         });
         response.code(200);
         return response;
     } catch (err) {
-        console.error(err);
         const response = h.response({
             status: 'fail',
             message: err.message,
