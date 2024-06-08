@@ -242,7 +242,7 @@ const uploadPainting = async (request, h) => {
             return response;
         }
 
-        const blobName = `${user.name}/${uuid.v4()}-${file.hapi.filename}`;
+        const blobName = `${uuid.v4()}-${file.hapi.filename}`;
         const blob = userBucket.file(blobName);
         const blobStream = blob.createWriteStream({
             resumable: false,
@@ -343,40 +343,11 @@ const deletePainting = async (request, h) => {
 // Fetch paintings to display on the home page
 const homePage = async (request, h) => {
     try {
-        const { userId } = request.query;
-
-        // Query to get the user's name
-        const userQuery = "SELECT * FROM users WHERE id = ?";
-        const user = await new Promise((resolve, reject) => {
-            connection.query(userQuery, [userId], (err, rows, field) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(rows[0]);
-                }
-            });
-        });
-        
-        if (!user){
-            const response = h.response({
-                status: 'fail',
-                message: 'User not found',
-            });
-            response.code(400);
-            return response;
-        }
-
-        // Fetch all paintings from user-specific directory
-        const [userPaintings] = await userBucket.getFiles({ prefix: `${user.name}` });
-
-        // Fetch 10 random paintings for the home page
-        const [randomPaintings] = await userBucket.getFiles();
-
-        // Combine the file arrays
-        const allFiles = [...userPaintings, ...randomPaintings];
+        // Fetch all paintings from the bucket
+        const [files] = await userBucket.getFiles();
 
         // Extract URLs of paintings
-        const paintingUrls = allFiles.map(file => `https://storage.googleapis.com/${userBucket.name}/${file.name}`);
+        const paintingUrls = files.map(file => `https://storage.googleapis.com/${userBucket.name}/${file.name}`);
 
         // Construct response
         const response = h.response({
