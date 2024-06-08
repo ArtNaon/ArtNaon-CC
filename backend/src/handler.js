@@ -64,9 +64,9 @@ const registerUser = async (request, h) => {
         });
 
         // Query to MySQL without Password
-        const query = "INSERT INTO users (name, email) VALUES (?, ?)";
+        const query = "INSERT INTO users (name, email, password) VALUES (?, ?, ?)";
         await new Promise((resolve, reject) => {
-            connection.query(query, [name, email], (err, rows, field) => {
+            connection.query(query, [name, email, hashedPassword], (err, rows, field) => {
                 if (err) {
                     reject(err);
                 } else {
@@ -78,8 +78,10 @@ const registerUser = async (request, h) => {
         const response = h.response({
             status: 'success',
             message: 'User created successfully',
-            name: name,
-            email: email,
+            result: {
+                name: name,
+                email: email
+            },
         });
         response.code(200);
         return response;
@@ -128,11 +130,16 @@ const loginUser = async (request, h) => {
             return response;
         }
         
-        const token = jwt.sign({ userId : user.id }, 'bangkit');
+        const token = jwt.sign({ userId: user.id }, 'bangkit', { expiresIn: '1h' });
+
         const response = h.response({
             status: 'success',
-            message: 'login successful',
-            data: { token },
+            message: 'Login successful',
+            result: {
+                name: user.name,
+                email: user.email,
+                token: token
+            },
         });
         response.code(200);
         return response;
@@ -149,49 +156,49 @@ const loginUser = async (request, h) => {
 // Reset Password
 const resetPassword = async (request, h) => {
     try {
-        const { email, displayName } = request.payload;
-
-        // URL to redirect back to
-        const actionCodeSettings = {
-            android: {
-                packageName: 'com.example.android',
-                installApp: true,
-                minimumVersion: '12' 
-            },
-        };
-        // Configure the email transporter using nodemailer
-        const transporter = nodemailer.createTransport({
-            host: 'smtp.example.com',
-            port: 587,
-            secure: false, // true for 465, false for other ports
-            auth: {
-                user: 'your-email@example.com',
-                pass: 'your-email-password'
-            }
+        const { email, newPassword } = request.payload;
+        
+        // Check if the email exists in the database
+        const user = await new Promise((resolve, reject) => {
+            const query = "SELECT * FROM users WHERE email = ?";
+            connection.query(query, [email], (err, rows) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(rows[0]);
+                }
+            });
         });
-        // Generate the password reset link
-        const link = await admin.auth().generatePasswordResetLink(email, actionCodeSettings);
-        // Define the mail options
-        const mailOptions = {
-            from: '"Your App Name" <your-email@gmail.com>',
-            to: email,
-            subject: 'Password Reset',
-            html: `<p><b>Hello ${displayName}!</b></p>
-                    <p>You requested to reset your password. Click the link below to reset it:</p>
-                    <a href="${link}">Reset Password</a>
-                    <p>If you didn't request a password reset, you can ignore this email.</p>`
-        };
-        // Send the email using Nodemailer
-        await transporter.sendMail(mailOptions);
+        
+        if (!user) {
+            const response = h.response({
+                status: 'fail',
+                message: 'User not found',
+            });
+            response.code(404);
+            return response;
+        }
+        
+        // Hash the new password
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        
+        // Update the user's password in the database
+        await new Promise((resolve, reject) => {
+            const updateQuery = "UPDATE users SET password = ? WHERE email = ?";
+            connection.query(updateQuery, [hashedPassword, email], (err, result) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(result);
+                }
+            });
+        });
 
         const response = h.response({
             status: 'success',
-            message: 'Password reset link sent',
-            email: auth,
-            name: displayName,
-            link: link
+            message: 'Password reset successfully',
         });
-        response.code(201);
+        response.code(200);
         return response;
     } catch (err) {
         const response = h.response({
@@ -203,16 +210,19 @@ const resetPassword = async (request, h) => {
     }
 };
 
+// Initialize Google Cloud Storage client
 const storage = new Storage();
-const bucket = storage.bucket('user-paintings');
+const userBucket = storage.bucket('user-paintings');
+const datasetBucket = storage.bucket('artnaon-dataset');
 
+// Upload painting to Google Cloud Storage and store metadata in MySQL
 const uploadPainting = async (request, h) => {
     try {
         const { userId, genre, description } = request.payload;
         const file = request.payload.painting;
 
         const blobName = `${uuid.v4()}-${file.hapi.filename}`;
-        const blob = bucket.file(blobName);
+        const blob = userBucket.file(blobName);
         const blobStream = blob.createWriteStream({
             resumable: false,
             gzip: true
@@ -224,27 +234,61 @@ const uploadPainting = async (request, h) => {
             blobStream.end(file._data);
         });
       
-        const publicUrl = `https://storage.googleapis.com/${bucket.name}/${blobName}`;
+        const publicUrl = `https://storage.googleapis.com/${userBucket.name}/${blobName}`;
         const query = 'INSERT INTO paintings (user_id, image_url, genre, description, upload_timestamp) VALUES (?, ?, ?, ?, NOW())';
 
         await connection.query(query, [userId, publicUrl, genre, description]);
 
-        return h.response({ message: 'Painting uploaded successfully', url: publicUrl }).code(201);
+        const response = h.response({
+            status: 'success',
+            message: 'Painting uploaded successfully',
+            result: {
+                genre: genre,
+                description: description,
+                Url: publicUrl
+            }
+        });
+        response.code(200);
+        return response;
     } catch (err) {
-        return h.response({ message: 'Error uploading painting or saving metadata', error: err.message }).code(500);
+        const response = h.response({
+            status: 'fail',
+            message: err.message,
+        });
+        response.code(500);
+        return response;
     }
 };
 
-const getPaintings = async (request, h) => {
+// Fetch paintings uploaded from a specific user
+const userPaintings = async (request, h) => {
     try {
         const { userId } = request.params;
+        const user = await connection.query('SELECT * FROM users WHERE id = ?', [userId]);
+        if (user.rowCount === 0) {
+            return h.response({ message: 'User not found' }).code(404);
+        }
+
         const [rows] = await connection.query('SELECT image_url FROM paintings WHERE user_id = ? ORDER BY upload_timestamp DESC', [userId]);
-        return h.response(rows.map(row => row.image_url)).code(200);
+        const response = h.response({
+            status: 'success',
+            message: 'Post deleted successfully',
+            data: rows.map(row => row.image_url)
+        });
+        response.code(200);
+        return response;
     } catch (err) {
-        return h.response({ message: 'Error fetching paintings', error: err.message }).code(500);
+        console.error(err);
+        const response = h.response({
+            status: 'fail',
+            message: err.message,
+        });
+        response.code(500);
+        return response;
     }
 };
 
+// Delete painting from Google Cloud Storage and MySQL
 const deletePainting = async (request, h) => {
     try {
         const { imageUrl } = request.params;
@@ -253,10 +297,50 @@ const deletePainting = async (request, h) => {
             return h.response({ message: 'Painting not found' }).code(404);
         }
         const paintingId = result.rows[0].id;
-        await connection.query('DELETE FROM posts WHERE id = ?', [paintingId]);
-        return h.response({ message: 'Post deleted successfully' }).code(200);
-    } catch (error) {
-        return h.response({ message: 'Error deleting post', error: error.message }).code(500);
+        await connection.query('DELETE FROM paintings WHERE id = ?', [paintingId]);
+
+        const response = h.response({
+            status: 'success',
+            message: 'Post deleted successfully',
+        });
+        response.code(200);
+        return response;
+    } catch (err) {
+        console.error(err);
+        const response = h.response({
+            status: 'fail',
+            message: err.message,
+        });
+        response.code(500);
+        return response;
+    }
+};
+
+// Fetch paintings to display on the home page
+const homePage = async (request, h) => {
+    try {
+        // Fetch all paintings from the bucket
+        const [files] = await userBucket.getFiles();
+
+        // Extract URLs of paintings
+        const paintingUrls = files.map(file => `https://storage.googleapis.com/${userBucket.name}/${file.name}`);
+
+        // Construct response
+        const response = h.response({
+            status: 'success',
+            message: 'Home page fetched successfully',
+            paintings: paintingUrls
+        });
+        response.code(200);
+        return response;
+    } catch (err) {
+        console.error(err);
+        const response = h.response({
+            status: 'fail',
+            message: err.message,
+        });
+        response.code(500);
+        return response;
     }
 };
 
@@ -265,6 +349,7 @@ module.exports = {
     loginUser,
     resetPassword,
     uploadPainting,
-    getPaintings,
-    deletePainting
+    userPaintings,
+    deletePainting,
+    homePage
 };
