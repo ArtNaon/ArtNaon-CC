@@ -4,11 +4,11 @@
     POST
 - URL
 
-    /register
+    `/register`
 
 - Request Body
 
-``` 
+```yaml
 {
   "name": "artnaon",
   "email": "artnaon@bangkit.academy",
@@ -18,11 +18,11 @@
 
 - Response
 
-```
+```yaml
 {
   "status": "success",
   "message": "User created successfully",
-  "name: "artnaon",
+  "name": "artnaon",
   "email": "artnaon@bangkit.academy"
 }
 ```
@@ -34,31 +34,30 @@
 
 - URL
 
-  /login
+  `/login`
 
 - Request Body 
 
-``` 
+```yaml 
 {
   "email": "artnaon@bangkit.academy",
-  "password" : "password"
+  "password": "password"
 }
 ```
 
 - Response
 
-``` 
+```yaml
 {
   "status": "success",
   "message": "login successful",
   "result": {
-    "name" : "artnaon" ,
+    "name": "artnaon" ,
     "email": "artnaon@bangkit.academy",
-    "token" : "eyJhbGci0iJIUzI1NiIsInR5cCI6IkpXVCJ9.
+    "token": "eyJhbGci0iJIUzI1NiIsInR5cCI6IkpXVCJ9.
                eyJ1c2VyswoiojMsImlhdCI6MTcxNzgzOTOyNywiZXhwIjoxNzE30DQzMDI310.
                hkvpgPOITP9KTGlaOuIaeskGSm4GszsnatfWxipRr8c"
   }
-  
 }
 ```
 
@@ -69,23 +68,23 @@
 
 - URL
 
-  /reset
+  `/reset`
 
 - Body Request
 
-``` 
+```yaml
 {
   "email": "artnaon@bangkit.academy",
-  "password" : "password"
+  "password": "password"
 }
 ```
 
 - Response
 
-``` 
+```yaml
 {
   "status": "success",
-  "message": "Password reset successful",
+  "message": "Password reset successful"
 }
 ```
 
@@ -96,7 +95,7 @@
 
 - URL
 
-  /upload
+  `/upload`
 
 - Request Body 
 
@@ -110,16 +109,16 @@
 
 - Response
 
-``` 
+``` yaml
 {
   "status": "success",
-  "message" :  "Painting uploaded successfully",
+  "message":  "Painting uploaded successfully",
   "data": {
     "genre": "Cubist",
     "description": "The Cubist category of painting, pioneered by artists like Picasso and Braque,
         deconstructs objects into geometric shapes and reassembles them in fragmented,
         multi-perspective compositions, challenging traditional notions of perspective and form.",
-    "Url":"https://storage.googleapis.com/user-paintings/artnaon/3e997b69-43da-4da0-845d-09db84eca5ff-81657@bb-1652-4605-b8bd-feff20e207bd.jpg"
+    "Url": "https://storage.googleapis.com/user-paintings/artnaon/3e997b69-43da-4da0-845d-09db84eca5ff-81657@bb-1652-4605-b8bd-feff20e207bd.jpg"
   }
 }
 ```
@@ -131,7 +130,7 @@
 
 - URL
 
-  /
+  `/`
 
 - Request Body 
 
@@ -140,7 +139,7 @@
 
 - Response
 
-``` 
+``` yaml
 {
  
 }
@@ -153,22 +152,22 @@
 
 - URL
 
-  /delete
+  `/delete`
 
 - Request Body 
 
-``` 
+``` yaml
 {
-   "imageurl":"https://storage.googleapis.com/user-paintings/undefined/0ce7b9ef-83a5-4053-bc03-3956fc8b47f5-82e01801-73f4-47af-b72a-038a32d832bd.jpg
+   "imageurl": "https://storage.googleapis.com/user-paintings/undefined/0ce7b9ef-83a5-4053-bc03-3956fc8b47f5-82e01801-73f4-47af-b72a-038a32d832bd.jpg"
 }
 ```
 
 - Response
 
-``` 
+``` yaml
 {
   "status": "success",
-  "message": "Painting deleted successfully",
+  "message": "Painting deleted successfully"
 }
 ```
 ## Show Home Page
@@ -178,7 +177,7 @@
 
 - URL
 
-  /homePage
+  `/homePage`
 
 - Body 
 
@@ -186,7 +185,7 @@
 
 - Response
 
-``` 
+```yaml
 {
     "status": "success",
     "message": "Home page fetched successfully",
