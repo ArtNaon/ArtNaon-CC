@@ -50,12 +50,12 @@ const routes = [
       },
       {
         method: 'GET',
-        path: '/home',
+        path: '/homePage/{userId}',
         handler: homePage,
       },
       {
         method: 'GET',
-        path: '/user/{userId}',
+        path: '/user',
         handler: getUser,
       },
 ];
