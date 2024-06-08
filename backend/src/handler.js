@@ -1,11 +1,7 @@
 const admin = require('./firebase');
 const bcrypt = require('bcrypt');
-const FormData = require('form-data');
-const fs = require('fs');
 const jwt = require('jsonwebtoken');
 const mysql = require('mysql');
-const nodemailer = require('nodemailer');
-const Path = require('path');
 const { Storage } = require('@google-cloud/storage');
 const uuid = require('uuid');
 require('dotenv').config();
@@ -212,8 +208,8 @@ const resetPassword = async (request, h) => {
 
 // Initialize Google Cloud Storage client
 const storage = new Storage();
-const userBucket = storage.bucket('user-paintings');
-const datasetBucket = storage.bucket('artnaon-dataset');
+const userBucket = storage.bucket('painting-bucket');
+const datasetBucket = storage.bucket('dataset-painting');
 
 // Upload painting to Google Cloud Storage and store metadata in MySQL
 const uploadPainting = async (request, h) => {
