@@ -130,7 +130,7 @@
 
 - URL
 
-  `/`
+  `/paintings/{userId}`
 
 - Request Body 
 
@@ -177,7 +177,7 @@
 
 - URL
 
-  `/homePage`
+  `/home`
 
 - Body 
 
