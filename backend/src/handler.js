@@ -222,9 +222,24 @@ const uploadPainting = async (request, h) => {
         const file = request.payload.painting;
 
         // Query to get the user's name
-        const user = await connection.query('SELECT * FROM users WHERE id = ?', [userId]);
-        if (user.length === 0) {
-            throw new Error('User not found');
+        const userQuery = "SELECT * FROM users WHERE id = ?";
+        const user = await new Promise((resolve, reject) => {
+            connection.query(userQuery, [userId], (err, rows, field) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(rows[0]);
+                }
+            });
+        });
+        
+        if (!user){
+            const response = h.response({
+                status: 'fail',
+                message: 'Account invalid',
+            });
+            response.code(400);
+            return response;
         }
 
         const blobName = `${user.name}/${uuid.v4()}-${file.hapi.filename}`;
@@ -353,6 +368,51 @@ const homePage = async (request, h) => {
     }
 };
 
+// Fetch a specific user from MySQL
+const getUser = async (request, h) => {
+    try {
+        const { userId } = request.params;
+        const userQuery = "SELECT * FROM users WHERE id = ?";
+        const user = await new Promise((resolve, reject) => {
+            connection.query(userQuery, [userId], (err, rows, field) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(rows[0]);
+                }
+            });
+        });
+
+        if (!user){
+            const response = h.response({
+                status: 'fail',
+                message: 'Account invalid',
+            });
+            response.code(400);
+            return response;
+        }
+
+        const response = h.response({
+            status: 'success',
+            message: 'User fethed successfully',
+            result: {
+                name: user.name,
+                email: user.email
+            }
+        });
+        response.code(200);
+        return response;
+    } catch (err) {
+        console.error(err);
+        const response = h.response({
+            status: 'fail',
+            message: err.message,
+        });
+        response.code(500);
+        return response;
+    }
+};
+
 module.exports = {
     registerUser,
     loginUser,
@@ -360,5 +420,6 @@ module.exports = {
     uploadPainting,
     userPaintings,
     deletePainting,
-    homePage
+    homePage,
+    getUser
 };
