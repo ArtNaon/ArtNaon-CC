@@ -1,5 +1,6 @@
 const admin = require('./firebase');
 const bcrypt = require('bcrypt');
+const dotenv = require('dotenv');
 const jwt = require('jsonwebtoken');
 const mysql = require('mysql');
 const { Storage } = require('@google-cloud/storage');
@@ -11,8 +12,7 @@ process.env.GOOGLE_APPLICATION_CREDENTIALS = "./src/gcp-service-account.json";
 
 // Connect to MySQL database
 const connection = mysql.createConnection({
-    host: '127.0.0.1',
-    port: '3306',
+    socketPath: '/cloudsql/artnaon:asia-southeast2:artnaon-sql',
     user: 'zalfyputra',
     database: 'artnaon_db',
     password: 'zalfy123'

@@ -1,6 +1,7 @@
 backend/node_modules
 backend/commands.sh
 backend/commands.sql
+backend/src/.env
 backend/src/firebase-service-account.json
 backend/src/gcp-service-account.json
 backend/cloud-sql-proxy
