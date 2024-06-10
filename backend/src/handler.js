@@ -12,7 +12,8 @@ process.env.GOOGLE_APPLICATION_CREDENTIALS = "./src/gcp-service-account.json";
 
 // Connect to MySQL database
 const connection = mysql.createConnection({
-    socketPath: '/cloudsql/artnaon:asia-southeast2:artnaon-sql',
+    //socketPath: '/cloudsql/artnaon:asia-southeast2:artnaon-sql',
+    host: '127.0.0.1',
     user: 'zalfyputra',
     database: 'artnaon_db',
     password: 'zalfy123'
@@ -407,6 +408,28 @@ const getUser = async (request, h) => {
     }
 };
 
+const genreHandler = async (request, h) => {
+    try {
+        const { genre } = request.payload;
+        const [files] = await datasetBucket.getFiles({ prefix: `${genre}/` });
+        const publicLinks = files.map(file => `https://storage.googleapis.com/${datasetBucket.name}/${file.name}`);
+        const response = h.response({
+            status: 'success',
+            message: 'Genre filtered successfully',
+            data: publicLinks
+        });
+        response.code(200);
+        return response;
+    } catch (err) {
+        console.error(err);
+        const response = h.response({
+            status: 'fail',
+            message: err.message,
+        });
+        response.code(500);
+        return response;
+    }
+}
 
 module.exports = {
     registerUser,
@@ -416,5 +439,6 @@ module.exports = {
     userPaintings,
     deletePainting,
     homePage,
-    getUser
+    getUser,
+    genreHandler
 };

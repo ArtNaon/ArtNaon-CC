@@ -6,7 +6,8 @@ const {
     userPaintings,
     deletePainting,
     homePage,
-    getUser
+    getUser,
+    genreHandler
 } = require('./handler');
 
 const routes = [
@@ -57,6 +58,11 @@ const routes = [
         method: 'GET',
         path: '/user',
         handler: getUser,
+      },
+      {
+        method: 'POST',
+        path: '/genre',
+        handler: genreHandler,
       },
 ];
 
