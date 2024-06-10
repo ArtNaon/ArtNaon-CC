@@ -281,7 +281,7 @@ const uploadPainting = async (request, h) => {
 // Fetch paintings uploaded from a specific user
 const userPaintings = async (request, h) => {
     try {
-        const { userId } = request.params;
+        const { userId } = request.params; 
         const user = await connection.query('SELECT * FROM users WHERE id = ?', [userId]);
         if (user.rowCount === 0) {
             return h.response({ message: 'User not found' }).code(404);
