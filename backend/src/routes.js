@@ -3,11 +3,12 @@ const {
     loginUser,
     resetPassword,
     uploadPainting,
-    userPaintings,
+    getUserPaintings,
     deletePainting,
     homePage,
     getUser,
-    genreHandler
+    genreHandler,
+    getPaintings
 } = require('./handler');
 
 const routes = [
@@ -40,9 +41,9 @@ const routes = [
         handler: uploadPainting,
       },
       {
-        method: 'GET',
-        path: '/paintings/{userId}',
-        handler: userPaintings,
+        method: 'POST',
+        path: '/userPaintings',
+        handler: getUserPaintings,
       },
       {
         method: 'POST',
@@ -55,7 +56,7 @@ const routes = [
         handler: homePage,
       },
       {
-        method: 'GET',
+        method: 'POST',
         path: '/user',
         handler: getUser,
       },
@@ -64,6 +65,11 @@ const routes = [
         path: '/genre',
         handler: genreHandler,
       },
+      {
+        method: 'POST',
+        path: '/paintings',
+        handler: getPaintings,
+      }
 ];
 
 module.exports = routes;
