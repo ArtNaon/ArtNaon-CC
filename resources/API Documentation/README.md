@@ -77,7 +77,7 @@
     {
       "status": "success",
       "message": "Home page fetched successfully",
-      "paintings": [
+      "result": [
         "https://storage.googleapis.com/user-paintings/3e997b69-43da-4da0-845d-09db84eca5ff-816570bb-1652-4605-b8bd-feff20e207bd.jpg",
         "https://storage.googleapis.com/user-paintings/82e832cf-0057-4cfa-8672-2605965d7d76-c6cbbf1e-5dc2-4a16-b4b8-24467e123a5e.jpg",
         "https://storage.googleapis.com/user-paintings/Abstract.jpg",
