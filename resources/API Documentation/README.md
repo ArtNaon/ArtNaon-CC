@@ -203,6 +203,7 @@
     ```
 
 ### Get Painting Details
+- **Method:** POST
 - **URL:** `/paintings`
 - **Request Body:**
     ```json
