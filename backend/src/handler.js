@@ -10,8 +10,8 @@ process.env.GOOGLE_APPLICATION_CREDENTIALS = "./src/gcp-service-account.json";
 
 // Connect to MySQL database
 const connection = mysql.createConnection({
-    //socketPath: '/cloudsql/artnaon:asia-southeast2:artnaon-sql',
-    host: '127.0.0.1',
+    socketPath: '/cloudsql/artnaon:asia-southeast2:artnaon-sql',
+    //host: '127.0.0.1',
     user: 'zalfyputra',
     database: 'artnaon_db',
     password: 'zalfy123'
