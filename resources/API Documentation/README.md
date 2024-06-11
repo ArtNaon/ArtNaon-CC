@@ -126,7 +126,7 @@
 - **Method:** POST
 - **URL:** `/upload`
 - **Request Body:**
-    - userId: `unique int`
+    - email: `string`
     - genre: `string`
     - description: `string`
     - painting: `file`
@@ -166,7 +166,7 @@
 - **Request Body:**
     ```json
     {
-      "userId": "1"
+      "email": "artnaon@bangkit.academy"
     }
     ```
 - **Response:**
@@ -187,7 +187,7 @@
 - **Request Body:**
     ```json
     {
-      "userId": "1"
+      "email": "artnaon@bangkit.academy"
     }
     ```
 - **Response:**
