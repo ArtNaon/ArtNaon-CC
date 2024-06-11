@@ -192,9 +192,30 @@ const datasetBucket = storage.bucket('dataset-painting');
 // Upload painting to Google Cloud Storage and store metadata in MySQL
 const uploadPainting = async (request, h) => {
     try {
-        const { userId, genre, description } = request.payload;
+        const { email, genre, description } = request.payload;
         const file = request.payload.painting;
 
+        // Check if the user exists
+        const userQuery = 'SELECT id FROM users WHERE email = ?';
+        const user = await new Promise((resolve, reject) => {
+            connection.query(userQuery, [email], (err, rows) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(rows[0]);
+                }
+            });
+        });
+
+        if (!user) {
+            const response = h.response({
+                status: 'fail',
+                message: 'User not found',
+            });
+            response.code(404);
+            return response;
+        }
+        
         // Generate a unique blob name
         const blobName = `${uuid.v4()}-${file.hapi.filename}`;
         const blob = userBucket.file(blobName);
@@ -213,8 +234,8 @@ const uploadPainting = async (request, h) => {
         const query = 'INSERT INTO paintings (user_id, image_url, genre, description, upload_timestamp) VALUES (?, ?, ?, ?, NOW())';
 
         // Store the painting metadata in MySQL
-        await connection.query(query, [userId, publicUrl, genre, description]);
-
+        await connection.query(query, [user.id, publicUrl, genre, description]);
+        
         return h.response({
             status: 'success',
             message: 'Painting uploaded successfully',
@@ -235,11 +256,29 @@ const uploadPainting = async (request, h) => {
 // Fetch paintings uploaded from a specific user
 const getUserPaintings = async (request, h) => {
     try {
-        // Fetch paintings from MySQL
-        const { userId } = request.payload;
+        // Check if the user exists
+        const { email } = request.payload;
+        const userQuery = 'SELECT id FROM users WHERE email = ?';
+        const user = await new Promise((resolve, reject) => {
+            connection.query(userQuery, [email], (err, rows) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(rows[0]);
+                }
+            });
+        });
+
+        if (!user) {
+            return h.response({
+                status: 'fail',
+                message: 'User not found!',
+            }).code(400);
+        }
+
         const artQuery = 'SELECT image_url FROM paintings WHERE user_id = ? ORDER BY upload_timestamp DESC';
         const paintings = await new Promise((resolve, reject) => {
-            connection.query(artQuery, [userId], (err, rows) => {
+            connection.query(artQuery, [user.id], (err, rows) => {
                 if (err) {
                     reject(err);
                 } else {
@@ -324,12 +363,12 @@ const homePage = async (request, h) => {
 // Fetch user details
 const getUser = async (request, h) => {
     try {
-        const { userId } = request.payload;
+        const { email } = request.payload;
 
         // Query to get the user's details
-        const query = "SELECT * FROM users WHERE id = ?";
+        const query = "SELECT * FROM users WHERE email = ?";
         const user = await new Promise((resolve, reject) => {
-            connection.query(query, [userId], (err, rows, field) => {
+            connection.query(query, [email], (err, rows, field) => {
                 if (err) {
                     reject(err);
                 } else {
