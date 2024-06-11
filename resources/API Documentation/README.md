@@ -168,7 +168,7 @@
     {
       "userId": "1"
     }
-    ``
+    ```
 - **Response:**
     ```json
     {
@@ -184,7 +184,7 @@
 ### Get User Paintings
 - **Method:** POST
 - **URL:** `/userPaintings`
-- **Request Header:**
+- **Request Body:**
     ```json
     {
       "userId": "1"
@@ -221,10 +221,3 @@
       }
     }
     ```
-
-
-
-
-
-
-
