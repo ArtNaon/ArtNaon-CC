@@ -2,6 +2,7 @@ const admin = require('./firebase');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const mysql = require('mysql');
+const path = require('path');
 const { Storage } = require('@google-cloud/storage');
 const uuid = require('uuid');
 
@@ -188,6 +189,7 @@ const resetPassword = async (request, h) => {
 const storage = new Storage();
 const userBucket = storage.bucket('painting-bucket');
 const datasetBucket = storage.bucket('dataset-painting');
+const profilePictureBucket = storage.bucket('profile_pic_88');
 
 // Upload painting to Google Cloud Storage and store metadata in MySQL
 const uploadPainting = async (request, h) => {
@@ -253,12 +255,12 @@ const uploadPainting = async (request, h) => {
     }
 };
 
-// Fetch paintings uploaded from a specific user
-const getUserPaintings = async (request, h) => {
+// Fetch user details and paintings
+const getUser = async (request, h) => {
     try {
         // Check if the user exists
         const { email } = request.payload;
-        const userQuery = 'SELECT id FROM users WHERE email = ?';
+        const userQuery = 'SELECT * FROM users WHERE email = ?';
         const user = await new Promise((resolve, reject) => {
             connection.query(userQuery, [email], (err, rows) => {
                 if (err) {
@@ -276,6 +278,7 @@ const getUserPaintings = async (request, h) => {
             }).code(400);
         }
 
+        // Fetch the user's paintings
         const artQuery = 'SELECT image_url FROM paintings WHERE user_id = ? ORDER BY upload_timestamp DESC';
         const paintings = await new Promise((resolve, reject) => {
             connection.query(artQuery, [user.id], (err, rows) => {
@@ -296,10 +299,16 @@ const getUserPaintings = async (request, h) => {
 
         // Extract the image URLs
         const publicLinks = paintings.flatMap(painting => painting.image_url);
+
         return h.response({
             status: 'success',
             message: 'User paintings fetched successfully',
-            result: publicLinks
+            result: {
+                name: user.name,
+                email: user.email,
+                picture: user.profile_pic_url,
+                result: publicLinks
+            }
         }).code(200);
     } catch (err) {
         console.error(err);
@@ -360,15 +369,16 @@ const homePage = async (request, h) => {
     }
 };
 
-// Fetch user details
-const getUser = async (request, h) => {
+// Upload Profile Picture
+const profilePicture = async (request, h) => {
     try {
         const { email } = request.payload;
+        const file = request.payload.profilePicture;
 
-        // Query to get the user's details
-        const query = "SELECT * FROM users WHERE email = ?";
+        // Check if the user exists
+        const userQuery = 'SELECT id, name FROM users WHERE email = ?';
         const user = await new Promise((resolve, reject) => {
-            connection.query(query, [email], (err, rows, field) => {
+            connection.query(userQuery, [email], (err, rows) => {
                 if (err) {
                     reject(err);
                 } else {
@@ -376,23 +386,47 @@ const getUser = async (request, h) => {
                 }
             });
         });
-        
-        if (!user){
-            return h.response({
+
+        if (!user) {
+            const response = h.response({
                 status: 'fail',
                 message: 'User not found',
-            }).code(400);
+            });
+            response.code(404);
+            return response;
         }
 
-        // Get the user's details
+        // Extract the file extension
+        const extension = path.extname(file.hapi.filename);
+
+        // Generate a unique blob name
+        const blobName = `${user.name}${extension}`;
+        const blob = profilePictureBucket.file(blobName);
+        const blobStream = blob.createWriteStream({
+            resumable: false,
+            gzip: true
+        }); 
+
+        await new Promise((resolve, reject) => {
+            blobStream.on('finish', resolve);
+            blobStream.on('error', reject);
+            blobStream.end(file._data);
+        });
+        
+        const publicUrl = `https://storage.googleapis.com/${profilePictureBucket.name}/${blobName}`;
+        const query = 'UPDATE users SET profile_pic_url = ? WHERE id = ?';
+
+        // Store the profile picture URL in MySQL
+        await connection.query(query, [publicUrl, user.id]);
+        
         return h.response({
             status: 'success',
-            message: 'User fetched successfully',
+            message: 'Profile picture uploaded successfully',
             result: {
-                name: user.name,
-                email: user.email
+                Url: publicUrl
             }
         }).code(200);
+
     } catch (err) {
         return h.response({
             status: 'fail',
@@ -458,15 +492,31 @@ const getPaintings = async (request, h) => {
     }
 };
 
+const listGenre = async (request, h) => {
+    try {
+        return h.response({
+            status: 'success',
+            message: 'Genre list fetched successfully',
+            result: ['Abstract', 'Landscape', 'Portrait', 'Still_life']
+        }).code(200);
+    } catch (err) {
+        return h.response({
+            status: 'fail',
+            message: err.message,
+        }).code(500);
+    }
+};
+
 module.exports = {
     registerUser,
     loginUser,
     resetPassword,
     uploadPainting,
-    getUserPaintings,
     deletePainting,
     homePage,
     getUser,
     genreHandler,
-    getPaintings
+    getPaintings,
+    profilePicture,
+    listGenre
 };

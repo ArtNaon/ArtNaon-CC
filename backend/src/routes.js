@@ -3,12 +3,13 @@ const {
     loginUser,
     resetPassword,
     uploadPainting,
-    getUserPaintings,
     deletePainting,
     homePage,
     getUser,
     genreHandler,
-    getPaintings
+    getPaintings,
+    profilePicture,
+    listGenre
 } = require('./handler');
 
 const routes = [
@@ -42,11 +43,6 @@ const routes = [
       },
       {
         method: 'POST',
-        path: '/userPaintings',
-        handler: getUserPaintings,
-      },
-      {
-        method: 'POST',
         path: '/delete',
         handler: deletePainting,
       },
@@ -69,6 +65,24 @@ const routes = [
         method: 'POST',
         path: '/paintings',
         handler: getPaintings,
+      },
+      {
+        method: 'POST',
+        path: '/profilePicture',
+        options: {
+          payload: {
+            output: 'stream',
+            parse: true,
+            multipart: true,
+            maxBytes: 10 * 1024 * 1024, // 10MB file limit
+          },
+        },
+        handler: profilePicture,
+      },
+      {
+        method: 'GET',
+        path: '/listGenre',
+        handler: listGenre,
       }
 ];
 
