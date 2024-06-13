@@ -8,7 +8,7 @@ const {
     getUser,
     genreHandler,
     getPaintings,
-    profilePicture,
+    editProfile,
     genreList
 } = require('./handler');
 
@@ -68,7 +68,7 @@ const routes = [
       },
       {
         method: 'POST',
-        path: '/profilePicture',
+        path: '/editProfile',
         options: {
           payload: {
             output: 'stream',
@@ -77,12 +77,17 @@ const routes = [
             maxBytes: 10 * 1024 * 1024, // 10MB file limit
           },
         },
-        handler: profilePicture,
+        handler: editProfile,
       },
       {
         method: 'GET',
         path: '/genreList',
         handler: genreList,
+      },
+      {
+        method: 'GET',
+        path: '/editProfile',
+        handler: editProfile,
       }
 ];
 

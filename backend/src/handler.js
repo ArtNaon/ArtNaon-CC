@@ -57,9 +57,9 @@ const registerUser = async (request, h) => {
         });
 
         // Query to MySQL
-        const query = "INSERT INTO users (name, email, password) VALUES (?, ?, ?)";
+        const query = "INSERT INTO users (name, email, password, profile_pic_url) VALUES (?, ?, ?, ?)";
         await new Promise((resolve, reject) => {
-            connection.query(query, [name, email, hashedPassword], (err, rows, field) => {
+            connection.query(query, [name, email, hashedPassword, ''], (err, rows, field) => {
                 if (err) {
                     reject(err);
                 } else {
@@ -173,6 +173,7 @@ const resetPassword = async (request, h) => {
                 }
             });
         });
+
         return h.response({
             status: 'success',
             message: 'Password reset successfully',
@@ -353,6 +354,9 @@ const homePage = async (request, h) => {
         // Fetch all paintings from the bucket
         const [files] = await userBucket.getFiles();
 
+        // Sort files by creation time in descending order
+        files.sort((a, b) => b.metadata.timeCreated.localeCompare(a.metadata.timeCreated));
+
         // Extract URLs of paintings
         const paintingUrls = files.map(file => `https://storage.googleapis.com/${userBucket.name}/${file.name}`);
 
@@ -370,13 +374,21 @@ const homePage = async (request, h) => {
 };
 
 // Upload Profile Picture
-const profilePicture = async (request, h) => {
+const editProfile = async (request, h) => {
     try {
-        const { email } = request.payload;
+        const { email, name, newPassword } = request.payload;
         const file = request.payload.profilePicture;
 
+        // Email is required
+        if (!email) {
+            return h.response({
+                status: 'fail',
+                message: 'Email is required',
+            }).code(400);
+        }
+
         // Check if the user exists
-        const userQuery = 'SELECT id, name FROM users WHERE email = ?';
+        const userQuery = 'SELECT * FROM users WHERE email = ?';
         const user = await new Promise((resolve, reject) => {
             connection.query(userQuery, [email], (err, rows) => {
                 if (err) {
@@ -396,35 +408,75 @@ const profilePicture = async (request, h) => {
             return response;
         }
 
-        // Extract the file extension
-        const extension = path.extname(file.hapi.filename);
+        // When name is provided
+        if (name) {
+            await new Promise((resolve, reject) => {
+                const updateQuery = "UPDATE users SET name = ? WHERE email = ?";
+                connection.query(updateQuery, [name, email], (err, result) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(result);
+                    }
+                });
+            });
+        }
 
-        // Generate a unique blob name
-        const blobName = `${user.name}${extension}`;
-        const blob = profilePictureBucket.file(blobName);
-        const blobStream = blob.createWriteStream({
-            resumable: false,
-            gzip: true
-        }); 
+        // When password is provided
+        let passwordStatus = 'Nothing is changed';
+        if (newPassword) {
+            const hashedPassword = await bcrypt.hash(newPassword, 10);
+            await new Promise((resolve, reject) => {
+                const updateQuery = "UPDATE users SET password = ? WHERE email = ?";
+                connection.query(updateQuery, [hashedPassword, email], (err, result) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                         resolve(result);
+                    }
+                });
+            });
+            passwordStatus = 'Password updated successfully';
+        }
 
-        await new Promise((resolve, reject) => {
-            blobStream.on('finish', resolve);
-            blobStream.on('error', reject);
-            blobStream.end(file._data);
-        });
-        
-        const publicUrl = `https://storage.googleapis.com/${profilePictureBucket.name}/${blobName}`;
-        const query = 'UPDATE users SET profile_pic_url = ? WHERE id = ?';
+        // When profile picture is provided
+        let publicUrl = user.profile_pic_url;
+        if (file && file.hapi && file.hapi.filename) {
+            // Extract the file extension
+            const extension = path.extname(file.hapi.filename);
 
-        // Store the profile picture URL in MySQL
-        await connection.query(query, [publicUrl, user.id]);
+            // Generate a unique blob name
+            const blobName = `${user.name}${extension}`;
+            const blob = profilePictureBucket.file(blobName);
+            const blobStream = blob.createWriteStream({
+                resumable: false,
+                gzip: true
+            }); 
+
+            await new Promise((resolve, reject) => {
+                blobStream.on('finish', resolve);
+                blobStream.on('error', reject);
+                blobStream.end(file._data);
+            });
+            
+            publicUrl = `https://storage.googleapis.com/${profilePictureBucket.name}/${blobName}`;
+            const query = 'UPDATE users SET profile_pic_url = ? WHERE id = ?';
+
+            // Store the profile picture URL in MySQL
+            await connection.query(query, [publicUrl, user.id]);
+        } else {
+            publicUrl = 'Nothing is changed';
+        }
         
         return h.response({
             status: 'success',
-            message: 'Profile picture uploaded successfully',
-            result: publicUrl
+            message: 'User profile updated successfully',
+            result: {
+                name: user.name + ' --> ' + name,
+                password: passwordStatus,
+                picture: publicUrl,
+            }
         }).code(200);
-
     } catch (err) {
         return h.response({
             status: 'fail',
@@ -456,9 +508,27 @@ const genreHandler = async (request, h) => {
 const getPaintings = async (request, h) => {
     try {
         const { imageUrl } = request.payload;
-        const query = "SELECT * FROM paintings WHERE image_url = ?";
+        const artQuery = "SELECT * FROM paintings WHERE image_url = ?";
         const paintings = await new Promise((resolve, reject) => {
-            connection.query(query, [imageUrl], (err, rows, field) => {
+            connection.query(artQuery, [imageUrl], (err, rows, field) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(rows[0]);
+                }
+            });
+        });
+        
+        if (!paintings){
+            return h.response({
+                status: 'fail',
+                message: 'User not found',
+            }).code(400);
+        }
+
+        const userQuery = "SELECT name, profile_pic_url FROM users WHERE id = ?";
+        const user = await new Promise((resolve, reject) => {
+            connection.query(userQuery, [paintings.user_id], (err, rows, field) => {
                 if (err) {
                     reject(err);
                 } else {
@@ -478,6 +548,8 @@ const getPaintings = async (request, h) => {
             status: 'success',
             message: 'Painting details fetched successfully',
             result: {
+                picture: user.profile_pic_url,
+                name: user.name,
                 genre: paintings.genre,
                 description: paintings.description
             }
@@ -526,6 +598,6 @@ module.exports = {
     getUser,
     genreHandler,
     getPaintings,
-    profilePicture,
+    editProfile,
     genreList
 };
