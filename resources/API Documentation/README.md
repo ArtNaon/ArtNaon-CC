@@ -51,24 +51,6 @@
     }
     ```
 
-### Reset Password
-- **Method:** POST
-- **URL:** `/reset`
-- **Request Body:**
-    ```json
-    {
-      "email": "artnaon@bangkit.academy",
-      "newPassword": "newpassword"
-    }
-    ```
-- **Response:**
-    ```json
-    {
-      "status": "success",
-      "message": "Password reset successfully"
-    }
-    ```
-
 ### Show Home Page
 - **Method:** GET
 - **URL:** `/homePage`
@@ -184,18 +166,24 @@
     }
     ```
 
-### Upload Profile Picture
+### Edit Profile
 - **Method:** POST
-- **URL:** `/profilePicture`
+- **URL:** `/editProfile`
 - **Request Body:**
     - email: `string`
+    - name: `string`
+    - password: `string`
     - picture: `file`
 - **Response:**
     ```json
     {
       "status": "success",
-      "message": "Profile picture uploaded successfully",
-      "result": "https://storage.googleapis.com/profile_pic_88/artnaon.jpg"
+      "message": "User profile updated successfully",
+      "result": {
+          "name": "artnaon --> artnaon2024",
+          "password": "Password updated successfully",
+          "picture": "https://storage.googleapis.com/profile_pic_88/artnaon.jpg"
+      }
     }
     ```
 
