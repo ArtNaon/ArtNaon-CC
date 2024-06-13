@@ -1,3 +1,4 @@
+const path = require('path');
 const { 
     registerUser,
     loginUser,
@@ -9,8 +10,11 @@ const {
     genreHandler,
     getPaintings,
     editProfile,
-    genreList
+    genreList,
+    likePaintings,
+    getLikedPaintings
 } = require('./handler');
+const { get } = require('http');
 
 const routes = [
     {
@@ -88,6 +92,16 @@ const routes = [
         method: 'GET',
         path: '/editProfile',
         handler: editProfile,
+      },
+      {
+        method: 'POST',
+        path: '/likePaintings',
+        handler: likePaintings,
+      },
+      {
+        method: 'POST',
+        path: '/getLikedPaintings',
+        handler: getLikedPaintings,
       }
 ];
 

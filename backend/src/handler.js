@@ -189,8 +189,8 @@ const resetPassword = async (request, h) => {
 // Initialize Google Cloud Storage client
 const storage = new Storage();
 const userBucket = storage.bucket('painting-bucket');
-const datasetBucket = storage.bucket('dataset-painting');
-const profilePictureBucket = storage.bucket('profile_pic_88');
+const datasetBucket = storage.bucket('artnaon_dataset');
+const profilePictureBucket = storage.bucket('artnaon_profile_picture');
 
 // Upload painting to Google Cloud Storage and store metadata in MySQL
 const uploadPainting = async (request, h) => {
@@ -551,7 +551,8 @@ const getPaintings = async (request, h) => {
                 picture: user.profile_pic_url,
                 name: user.name,
                 genre: paintings.genre,
-                description: paintings.description
+                description: paintings.description,
+                createdAt: paintings.upload_timestamp
             }
         }).code(200);
     } catch (err) {
@@ -568,17 +569,153 @@ const genreList = async (request, h) => {
             status: 'success',
             message: 'Genre list fetched successfully',
             result: [
-                'Abstract',
-                'Cubist',
-                'Expressionist',
-                'Impressionist',
-                'Landscape',
-                'Pop Art',
-                'Portrait',
-                'Realist',
-                'Still Life',
-                'Surrealist'
+                'Abstract', 
+                'Expressionism',
+                'Neoclassicism', 
+                'Primitivism', 
+                'Realism',
+                'Romanticism',
+                'Symbolism'
             ]
+        }).code(200);
+    } catch (err) {
+        return h.response({
+            status: 'fail',
+            message: err.message,
+        }).code(500);
+    }
+};
+
+const likePaintings = async (request, h) => {
+    try {
+        const { email, imageUrl } = request.payload;
+
+        // Check if user and painting exist
+        const userQuery = 'SELECT * FROM users WHERE email = ?';
+        const paintingQuery = 'SELECT * FROM paintings WHERE image_url = ?';
+
+        const user = await new Promise((resolve, reject) => {
+            connection.query(userQuery, [email], (err, rows, field) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(rows[0]);
+                }
+            });
+        });
+        
+        const painting = await new Promise((resolve, reject) => {
+            connection.query(paintingQuery, [imageUrl], (err, rows, field) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(rows[0]);
+                }
+            });
+        });
+
+        if (!user) {
+            return h.response({
+                status: 'fail',
+                message: 'User not found',
+            }).code(404);
+        }
+
+        if (!painting) {
+            return h.response({
+                status: 'fail',
+                message: 'Painting not found',
+            }).code(404);
+        }
+
+        // Check if the user has already liked the painting
+        const likeCheckQuery = 'SELECT * FROM user_likes WHERE user_id = ? AND painting_id = ?';
+        const existingLike = await new Promise((resolve, reject) => {
+            connection.query(likeCheckQuery, [user.id, painting.id], (err, rows, field) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(rows[0]);
+                }
+            });
+        });
+
+        if (existingLike) {
+            return h.response({
+                status: 'fail',
+                message: 'Painting already liked',
+            }).code(400);
+        }
+
+        // Insert the like into the user_likes table
+        const insertLikeQuery = 'INSERT INTO user_likes (user_id, painting_id) VALUES (?, ?)';
+        await connection.query(insertLikeQuery, [user.id, painting.id]);
+
+        return h.response({
+            status: 'success',
+            message: 'Painting liked successfully',
+        }).code(200);
+    } catch (err) {
+        return h.response({
+            status: 'fail',
+            message: err.message,
+        }).code(500);
+    }
+};
+
+const getLikedPaintings = async (request, h) => {
+    try {
+        const { email } = request.payload;
+
+        // Check if the user exists
+        const userQuery = 'SELECT * FROM users WHERE email = ?';
+        const user = await new Promise((resolve, reject) => {
+            connection.query(userQuery, [email], (err, rows, field) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(rows[0]);
+                }
+            });
+        });
+
+        if (!user) {
+            return h.response({
+                status: 'fail',
+                message: 'User not found',
+            }).code(404);
+        }
+
+        // Retrieve the liked paintings
+        const likedPaintingsQuery = `
+            SELECT image_url FROM paintings
+            JOIN user_likes ON paintings.id = user_likes.painting_id
+            WHERE user_likes.user_id = ?
+        `;
+        const likedPaintings = await new Promise((resolve, reject) => {
+            connection.query(likedPaintingsQuery, [user.id], (err, rows) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(rows);
+                }
+            });
+        });
+
+        if (!likedPaintings || likedPaintings.length === 0) {
+            return h.response({
+                status: 'fail',
+                message: 'No liked paintings found',
+            }).code(404);
+        }
+
+        // Construct the public URLs for the liked paintings
+        const publicLinks = likedPaintings.flatMap(painting => painting.image_url);
+
+        return h.response({
+            status: 'success',
+            message: 'Liked paintings retrieved successfully',
+            result: publicLinks
         }).code(200);
     } catch (err) {
         return h.response({
@@ -599,5 +736,7 @@ module.exports = {
     genreHandler,
     getPaintings,
     editProfile,
-    genreList
+    genreList,
+    likePaintings,
+    getLikedPaintings
 };
