@@ -497,7 +497,15 @@ const listGenre = async (request, h) => {
         return h.response({
             status: 'success',
             message: 'Genre list fetched successfully',
-            result: ['Abstract', 'Landscape', 'Portrait', 'Still_life']
+            result: [
+                'Abstract',
+                'Expressionism',
+                'Neoclassicism', 
+                'Primitivism', 
+                'Realism',
+                'Romanticism',
+                'Symbolism'
+            ]
         }).code(200);
     } catch (err) {
         return h.response({
