@@ -94,6 +94,26 @@
     }
     ```
 
+### Show Genre List
+- **Method:** GET
+- **URL:** `/genreList`
+- **Response:**
+    ```json
+    {
+    "status": "success",
+    "message": "Genre list fetched successfully",
+    "result": [
+        "Abstract",
+        "Expressionism",
+        "Neoclassicism",
+        "Primitivism",
+        "Realism",
+        "Romanticism",
+        "Symbolism"
+      ]
+    }
+    ```
+
 ### Genre Filter (or Show Similar Paintings)
 - **Method:** POST
 - **URL:** `/genre`
@@ -102,6 +122,7 @@
     {
       "genre": "Abstract"
     }
+    ```
 - **Response:**
     ```json
     {
@@ -160,28 +181,22 @@
     }
     ```
 
-### Get User Details
+### Upload Profile Picture
 - **Method:** POST
-- **URL:** `/user`
+- **URL:** `/profilePicture`
 - **Request Body:**
-    ```json
-    {
-      "email": "artnaon@bangkit.academy"
-    }
-    ```
+    - email: `string`
+    - picture: `file`
 - **Response:**
     ```json
     {
       "status": "success",
-      "message": "User fetched successfully",
-      "result": {
-        "name": "artnaon",
-        "email": "artnaon@bangkit.academy"
-      }
+      "message": "Profile picture uploaded successfully",
+      "result": "https://storage.googleapis.com/profile_pic_88/artnaon.jpg"
     }
     ```
 
-### Get User Paintings
+### Get User Details
 - **Method:** POST
 - **URL:** `/userPaintings`
 - **Request Body:**
@@ -195,10 +210,15 @@
     {
       "status": "success",
       "message": "User paintings fetched successfully",
-      "result": [
-        "https://storage.googleapis.com/user-paintings/3e997b69-43da-4da0-845d-09db84eca5ff-816570bb-1652-4605-b8bd-feff20e207bd.jpg",
-        "https://storage.googleapis.com/user-paintings/82e832cf-0057-4cfa-8672-2605965d7d76-c6cbbf1e-5dc2-4a16-b4b8-24467e123a5e.jpg"
-      ]
+      "result": {
+        "name": "artnaon",
+        "email": "artnaon@bangkit.academy",
+        "picture": "https://storage.googleapis.com/profile_pic_88/artnaon.jpg",
+        "result": [
+          "https://storage.googleapis.com/user-paintings/3e997b69-43da-4da0-845d-09db84eca5ff-816570bb-1652-4605-b8bd-feff20e207bd.jpg",
+          "https://storage.googleapis.com/user-paintings/82e832cf-0057-4cfa-8672-2605965d7d76-c6cbbf1e-5dc2-4a16-b4b8-24467e123a5e.jpg"
+        ]
+      }
     }
     ```
 
