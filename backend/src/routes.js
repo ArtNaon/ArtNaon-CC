@@ -9,7 +9,7 @@ const {
     genreHandler,
     getPaintings,
     profilePicture,
-    listGenre
+    genreList
 } = require('./handler');
 
 const routes = [
@@ -81,8 +81,8 @@ const routes = [
       },
       {
         method: 'GET',
-        path: '/listGenre',
-        handler: listGenre,
+        path: '/genreList',
+        handler: genreList,
       }
 ];
 

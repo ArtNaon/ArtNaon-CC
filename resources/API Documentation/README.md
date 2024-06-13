@@ -104,12 +104,15 @@
     "message": "Genre list fetched successfully",
     "result": [
         "Abstract",
-        "Expressionism",
-        "Neoclassicism",
-        "Primitivism",
-        "Realism",
-        "Romanticism",
-        "Symbolism"
+        "Cubist",
+        "Expressionist",
+        "Impressionist",
+        "Landscape",
+        "Pop Art",
+        "Portrait",
+        "Realist",
+        "Still Life",
+        "Surrealist"
       ]
     }
     ```
@@ -198,7 +201,7 @@
 
 ### Get User Details
 - **Method:** POST
-- **URL:** `/userPaintings`
+- **URL:** `/user`
 - **Request Body:**
     ```json
     {

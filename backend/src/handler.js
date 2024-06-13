@@ -11,8 +11,8 @@ process.env.GOOGLE_APPLICATION_CREDENTIALS = "./src/gcp-service-account.json";
 
 // Connect to MySQL database
 const connection = mysql.createConnection({
-    //socketPath: '/cloudsql/artnaon:asia-southeast2:artnaon-sql',
-    host: '127.0.0.1',
+    socketPath: '/cloudsql/artnaon:asia-southeast2:artnaon-sql',
+    //host: '127.0.0.1',
     user: 'zalfyputra',
     database: 'artnaon_db',
     password: 'zalfy123'
@@ -422,9 +422,7 @@ const profilePicture = async (request, h) => {
         return h.response({
             status: 'success',
             message: 'Profile picture uploaded successfully',
-            result: {
-                Url: publicUrl
-            }
+            result: publicUrl
         }).code(200);
 
     } catch (err) {
@@ -492,19 +490,22 @@ const getPaintings = async (request, h) => {
     }
 };
 
-const listGenre = async (request, h) => {
+const genreList = async (request, h) => {
     try {
         return h.response({
             status: 'success',
             message: 'Genre list fetched successfully',
             result: [
                 'Abstract',
-                'Expressionism',
-                'Neoclassicism', 
-                'Primitivism', 
-                'Realism',
-                'Romanticism',
-                'Symbolism'
+                'Cubist',
+                'Expressionist',
+                'Impressionist',
+                'Landscape',
+                'Pop Art',
+                'Portrait',
+                'Realist',
+                'Still Life',
+                'Surrealist'
             ]
         }).code(200);
     } catch (err) {
@@ -526,5 +527,5 @@ module.exports = {
     genreHandler,
     getPaintings,
     profilePicture,
-    listGenre
+    genreList
 };
