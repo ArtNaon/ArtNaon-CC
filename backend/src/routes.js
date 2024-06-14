@@ -11,7 +11,7 @@ const {
     genreList,
     likePaintings,
     getLikedPaintings,
-    detectPaintings
+    classifyPaintings
 } = require('./handler');
 
 const routes = [
@@ -98,8 +98,16 @@ const routes = [
       },
       {
         method: 'POST',
-        path: '/detectPaintings',
-        handler: detectPaintings,
+        path: '/classifyPaintings',
+        options: {
+          payload: {
+            output: 'stream',
+            parse: true,
+            multipart: true,
+            maxBytes: 10 * 1024 * 1024, // 10MB file limit
+          },
+        },
+        handler: classifyPaintings,
       }
 
 ];

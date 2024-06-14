@@ -91,6 +91,13 @@ const loginUser = async (request, h) => {
     try {
         // Check if email exists in the database
         const { email, password } = request.payload;
+        if (!email || !password) {
+            return h.response({
+                status: 'fail',
+                message: 'Please enter email and password',
+            }).code(400);
+        }
+
         const query = "SELECT * FROM users WHERE email = ?";
         const user = await new Promise((resolve, reject) => {
             connection.query(query, [email], (err, rows, field) => {
@@ -150,6 +157,13 @@ const uploadPainting = async (request, h) => {
     try {
         const { email, genre, description } = request.payload;
         const file = request.payload.painting;
+
+        if (!email || !genre || !description || !file) {
+            return h.response({
+                status: 'fail',
+                message: 'Please provide email, genre, description, and painting',
+            }).code(400);
+        }
 
         // Check if the user exists
         const userQuery = 'SELECT id FROM users WHERE email = ?';
@@ -433,8 +447,29 @@ const editProfile = async (request, h) => {
 const genreHandler = async (request, h) => {
     try {
         const { genre } = request.payload;
+
+        // Fetch paintings from the user bucket based on the genre
+        const userQuery = 'SELECT image_url FROM paintings WHERE genre = ? ORDER BY upload_timestamp DESC';
+        const userPaintings = await new Promise((resolve, reject) => {
+            connection.query(userQuery, [genre], (err, rows) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(rows);
+                }
+            });
+        });
+
+        // Extract the image URLs
+        const userLinks = userPaintings.flatMap(painting => painting.image_url);
+
+        // Fetch paintings from the dataset bucket based on the genre
         const [files] = await datasetBucket.getFiles({ prefix: `${genre}/`, maxResults: 10 });
-        const publicLinks = files.map(file => `https://storage.googleapis.com/${datasetBucket.name}/${file.name}`);
+        const datasetLinks = files.map(file => `https://storage.googleapis.com/${datasetBucket.name}/${file.name}`);
+        
+        // Combine the dataset and user paintings
+        const publicLinks = [...userLinks, ...datasetLinks];
+
         return h.response({
             status: 'success',
             message: 'Genre selected successfully',
@@ -673,7 +708,8 @@ const getLikedPaintings = async (request, h) => {
     }
 };
 
-const detectPaintings = async (request, h) => {
+// Classify paintings using ML model
+const classifyPaintings = async (request, h) => {
     try {
         const file = request.payload.image;
 
@@ -685,23 +721,44 @@ const detectPaintings = async (request, h) => {
             }).code(400);
         }
 
-        // Create a FormData instance
+        // Create a FormData instance and append the image file
         const formData = new FormData();
-        formData.append('file', file._data, file.hapi.filename);
+        formData.append('image', file._data, {
+            filename: file.hapi.filename,
+            contentType: file.hapi.headers['content-type']
+        });
 
-        // Make a request to the Cloud Run endpoint
-        const modelUrl = 'https://model-2qimicuoja-et.a.run.app/prediction';
-        const response = await axios.post(modelUrl, formData, {
+        // Make a request to the Flask endpoint
+        const flaskUrl = 'https://model-2qimicuoja-et.a.run.app/prediction';
+        const response = await axios.post(flaskUrl, formData, {
             headers: {
                 ...formData.getHeaders()
             }
         });
 
+        // Parse the classification result from the response
+        const { image_types_prediction, confidence } = response.data.data;
+        
+        // Fetch genre description
+        const genreQuery = 'SELECT * FROM genre_desc WHERE genre = ?';
+        const genre = await new Promise((resolve, reject) => {
+            connection.query(genreQuery, [image_types_prediction], (err, rows) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(rows[0]);
+                }
+            });
+        });
+        
         // Return the classification result
         return h.response({
             status: 'success',
-            message: 'Image classified successfully',
-            result: response.data,
+            message: 'Painting classified successfully',
+            result: {
+                genre: image_types_prediction,
+                description: genre.description
+            }
         }).code(200);
     } catch (err) {
         return h.response({
@@ -709,7 +766,7 @@ const detectPaintings = async (request, h) => {
             message: err.message,
         }).code(500);
     }
-}
+};
 
 module.exports = {
     registerUser,
@@ -724,5 +781,5 @@ module.exports = {
     genreList,
     likePaintings,
     getLikedPaintings,
-    detectPaintings
+    classifyPaintings
 };
