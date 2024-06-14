@@ -291,12 +291,7 @@ const getUser = async (request, h) => {
             });
         });
 
-        if (!paintings || paintings.length === 0) {
-            return h.response({
-                status: 'fail',
-                message: 'Paintings not found!',
-            }).code(400);
-        }
+
 
         // Extract the image URLs
         const publicLinks = paintings.flatMap(painting => painting.image_url);

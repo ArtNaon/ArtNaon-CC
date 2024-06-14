@@ -1,0 +1,7 @@
+0 Abstract
+1 Expressionism
+2 Neoclassicism
+3 Primitivism
+4 Realism
+5 Romanticism
+6 Symbolism
