@@ -177,9 +177,9 @@
       "status": "success",
       "message": "User profile updated successfully",
       "result": {
-          "name": "artnaon --> artnaon2024",
-          "password": "Password updated successfully",
-          "picture": "https://storage.googleapis.com/artnaon_profile_picture/artnaon.jpg"
+          "name": "artnaon2024",
+          "newPassword": "Password updated successfully",
+          "profilePicture": "https://storage.googleapis.com/artnaon_profile_picture/artnaon.jpg"
       }
     }
     ```

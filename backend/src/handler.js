@@ -417,8 +417,8 @@ const editProfile = async (request, h) => {
             message: 'User profile updated successfully',
             result: {
                 name: name,
-                password: passwordStatus,
-                picture: publicUrl,
+                newPassword: passwordStatus,
+                profilePicture: publicUrl,
             }
         }).code(200);
     } catch (err) {
