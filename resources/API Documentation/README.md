@@ -169,8 +169,8 @@
 - **Request Body:**
     - email: `string`
     - name: `string`
-    - password: `string`
-    - picture: `file`
+    - newPassword: `string`
+    - profilePicture: `file`
 - **Response:**
     ```json
     {

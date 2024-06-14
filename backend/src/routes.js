@@ -1,8 +1,6 @@
-const path = require('path');
 const { 
     registerUser,
     loginUser,
-    resetPassword,
     uploadPainting,
     deletePainting,
     homePage,
@@ -12,9 +10,9 @@ const {
     editProfile,
     genreList,
     likePaintings,
-    getLikedPaintings
+    getLikedPaintings,
+    detectPaintings
 } = require('./handler');
-const { get } = require('http');
 
 const routes = [
     {
@@ -26,11 +24,6 @@ const routes = [
         method: 'POST',
         path: '/login',
         handler: loginUser,
-    },
-    {
-        method: 'POST',
-        path: '/reset',
-        handler: resetPassword,
     },
     { 
         method: 'POST',
@@ -102,7 +95,13 @@ const routes = [
         method: 'POST',
         path: '/getLikedPaintings',
         handler: getLikedPaintings,
+      },
+      {
+        method: 'POST',
+        path: '/detectPaintings',
+        handler: detectPaintings,
       }
+
 ];
 
 module.exports = routes;

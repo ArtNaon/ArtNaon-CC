@@ -1,5 +1,8 @@
 const admin = require('./firebase');
+const axios = require('axios');
 const bcrypt = require('bcrypt');
+const FormData = require('form-data');
+const fs = require('fs');
 const jwt = require('jsonwebtoken');
 const mysql = require('mysql');
 const path = require('path');
@@ -11,8 +14,8 @@ process.env.GOOGLE_APPLICATION_CREDENTIALS = "./src/gcp-service-account.json";
 
 // Connect to MySQL database
 const connection = mysql.createConnection({
-    socketPath: '/cloudsql/artnaon:asia-southeast2:artnaon-sql',
-    //host: '127.0.0.1',
+    //socketPath: '/cloudsql/artnaon:asia-southeast2:artnaon-sql',
+    host: '127.0.0.1',
     user: 'zalfyputra',
     database: 'artnaon_db',
     password: 'zalfy123'
@@ -407,15 +410,13 @@ const editProfile = async (request, h) => {
 
             // Store the profile picture URL in MySQL
             await connection.query(query, [publicUrl, user.id]);
-        } else {
-            publicUrl = 'Nothing is changed';
         }
         
         return h.response({
             status: 'success',
             message: 'User profile updated successfully',
             result: {
-                name: user.name + ' --> ' + name,
+                name: name,
                 password: passwordStatus,
                 picture: publicUrl,
             }
@@ -491,6 +492,7 @@ const getPaintings = async (request, h) => {
             status: 'success',
             message: 'Painting details fetched successfully',
             result: {
+                imageUrl: imageUrl,
                 picture: user.profile_pic_url,
                 name: user.name,
                 genre: paintings.genre,
@@ -671,10 +673,47 @@ const getLikedPaintings = async (request, h) => {
     }
 };
 
+const detectPaintings = async (request, h) => {
+    try {
+        const file = request.payload.image;
+
+        // Validate file input
+        if (!file || !file.hapi || !file.hapi.filename) {
+            return h.response({
+                status: 'fail',
+                message: 'No image provided',
+            }).code(400);
+        }
+
+        // Create a FormData instance
+        const formData = new FormData();
+        formData.append('file', file._data, file.hapi.filename);
+
+        // Make a request to the Cloud Run endpoint
+        const modelUrl = 'https://model-2qimicuoja-et.a.run.app/prediction';
+        const response = await axios.post(modelUrl, formData, {
+            headers: {
+                ...formData.getHeaders()
+            }
+        });
+
+        // Return the classification result
+        return h.response({
+            status: 'success',
+            message: 'Image classified successfully',
+            result: response.data,
+        }).code(200);
+    } catch (err) {
+        return h.response({
+            status: 'fail',
+            message: err.message,
+        }).code(500);
+    }
+}
+
 module.exports = {
     registerUser,
     loginUser,
-    resetPassword,
     uploadPainting,
     deletePainting,
     homePage,
@@ -684,5 +723,6 @@ module.exports = {
     editProfile,
     genreList,
     likePaintings,
-    getLikedPaintings
+    getLikedPaintings,
+    detectPaintings
 };
