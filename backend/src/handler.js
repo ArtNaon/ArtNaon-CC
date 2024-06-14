@@ -136,56 +136,6 @@ const loginUser = async (request, h) => {
     }
 };
 
-// Reset Password
-const resetPassword = async (request, h) => {
-    try {
-        // Check if the email exists in the database
-        const { email, newPassword } = request.payload;
-        const user = await new Promise((resolve, reject) => {
-            const query = "SELECT * FROM users WHERE email = ?";
-            connection.query(query, [email], (err, rows) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(rows[0]);
-                }
-            });
-        });
-        
-        if (!user) {
-            const response = h.response({
-                status: 'fail',
-                message: 'User not found',
-            });
-            response.code(404);
-            return response;
-        }
-        
-        // Hash the newPassword and update the user's password
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
-        await new Promise((resolve, reject) => {
-            const updateQuery = "UPDATE users SET password = ? WHERE email = ?";
-            connection.query(updateQuery, [hashedPassword, email], (err, result) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(result);
-                }
-            });
-        });
-
-        return h.response({
-            status: 'success',
-            message: 'Password reset successfully',
-        }).code(200);
-    } catch (err) {
-        return h.response({
-            status: 'fail',
-            message: err.message,
-        }).code(500);
-    }
-};
-
 // Initialize Google Cloud Storage client
 const storage = new Storage();
 const userBucket = storage.bucket('painting-bucket');
@@ -290,8 +240,6 @@ const getUser = async (request, h) => {
                 }
             });
         });
-
-
 
         // Extract the image URLs
         const publicLinks = paintings.flatMap(painting => painting.image_url);
@@ -558,6 +506,7 @@ const getPaintings = async (request, h) => {
     }
 };
 
+// Fetch Genre List
 const genreList = async (request, h) => {
     try {
         return h.response({
@@ -581,6 +530,7 @@ const genreList = async (request, h) => {
     }
 };
 
+// Users can like one or multiple paintings
 const likePaintings = async (request, h) => {
     try {
         const { email, imageUrl } = request.payload;
@@ -658,6 +608,7 @@ const likePaintings = async (request, h) => {
     }
 };
 
+// Fetch liked paintings for a specific user
 const getLikedPaintings = async (request, h) => {
     try {
         const { email } = request.payload;
