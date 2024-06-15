@@ -111,6 +111,7 @@
       "status": "success",
       "message": "Genre selected successfully",
       "data": [
+          "https://storage.googleapis.com/painting-bucket/0d4e052a-e83a-4318-a4cd-418f4ffe470f-9223372032559886687.jpg",
           "https://storage.googleapis.com/artnaon-dataset/Abstract/05d399e0-a828-4b37-999c-7d98459f6d1e.jpg",
           "https://storage.googleapis.com/artnaon-dataset/Abstract/07dba6b3-9a56-4646-93c7-2dc248d9afe1.jpg",
           "https://storage.googleapis.com/artnaon-dataset/Abstract/0876a7ab-067c-4880-8c00-c6d622db0df9.jpg",
@@ -267,5 +268,22 @@
         "https://storage.googleapis.com/painting-bucket/f2aef79f-5bc1-4393-a39c-77e42101801d-20240613_2252445190169778497490446.jpg",
         "https://storage.googleapis.com/painting-bucket/d372d099-25a5-4bc9-bf7f-8979a2f03386-20240613_1758034050068899106083718.jpg"
       ]
+    }
+    ```
+
+### Classify Paintings (with ML Model)
+- **Method:** POST
+- **URL:** `/classifyPaintings
+- **Request Body:**
+    - image: `file`
+- **Response:**
+    ```json
+    {
+      "status": "success",
+      "message": "Painting classified successfully",
+      "result": {
+          "genre": "Abstract",
+          "description": "Abstract painting focuses on shapes, colors, forms, and gestural marks to convey artistic expression rather than realistic depictions. It can be completely non-representational or only loosely based on reality, allowing for a wide range of interpretations and emotional responses from the viewer. Notable abstract artists include Wassily Kandinsky, Piet Mondrian, and Jackson Pollock, each of whom contributed to the diverse techniques and styles within the movement."
+      }
     }
     ```
