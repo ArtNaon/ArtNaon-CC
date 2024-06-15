@@ -400,17 +400,17 @@ const editProfile = async (request, h) => {
         }
 
         // When profile picture is provided
-        let publicUrl = user.profile_pic_url;
+        let publicUrl = 'Nothing is changed';
         if (file && file.hapi && file.hapi.filename) {
             // Extract the file extension
             const extension = path.extname(file.hapi.filename);
 
             // Generate a unique blob name
-            const blobName = `${user.name}${extension}`;
+            const blobName = `${user.name}-${uuid.v4()}${extension}`;
             const blob = profilePictureBucket.file(blobName);
             const blobStream = blob.createWriteStream({
                 resumable: false,
-                gzip: true
+                gzip: true,
             }); 
 
             await new Promise((resolve, reject) => {
@@ -418,7 +418,7 @@ const editProfile = async (request, h) => {
                 blobStream.on('error', reject);
                 blobStream.end(file._data);
             });
-            
+
             publicUrl = `https://storage.googleapis.com/${profilePictureBucket.name}/${blobName}`;
             const query = 'UPDATE users SET profile_pic_url = ? WHERE id = ?';
 
