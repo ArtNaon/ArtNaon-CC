@@ -275,6 +275,7 @@
 - **Method:** POST
 - **URL:** `/classifyPaintings
 - **Request Body:**
+    - language: string `en` or `id`
     - image: `file`
 - **Response:**
     ```json
