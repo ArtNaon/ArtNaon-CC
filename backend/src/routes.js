@@ -1,6 +1,7 @@
 const { 
     registerUser,
     loginUser,
+    resetPassword,
     uploadPainting,
     deletePainting,
     homePage,
@@ -24,6 +25,11 @@ const routes = [
         method: 'POST',
         path: '/login',
         handler: loginUser,
+    },
+    {
+        method: 'POST',
+        path: '/reset',
+        handler: resetPassword,
     },
     { 
         method: 'POST',

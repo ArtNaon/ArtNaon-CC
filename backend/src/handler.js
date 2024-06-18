@@ -14,8 +14,8 @@ process.env.GOOGLE_APPLICATION_CREDENTIALS = "./src/gcp-service-account.json";
 
 // Connect to MySQL database
 const connection = mysql.createConnection({
-    socketPath: '/cloudsql/artnaon:asia-southeast2:artnaon-sql',
-    //host: '127.0.0.1',
+    //socketPath: '/cloudsql/artnaon:asia-southeast2:artnaon-sql',
+    host: '127.0.0.1',
     user: 'zalfyputra',
     database: 'artnaon_db',
     password: 'zalfy123'
@@ -137,6 +137,56 @@ const loginUser = async (request, h) => {
                 email: user.email,
                 token: token
             }
+        }).code(200);
+    } catch (err) {
+        return h.response({
+            status: 'fail',
+            message: err.message,
+        }).code(500);
+    }
+};
+
+// Reset Password
+const resetPassword = async (request, h) => {
+    try {
+        // Check if the email exists in the database
+        const { email, newPassword } = request.payload;
+        const user = await new Promise((resolve, reject) => {
+            const query = "SELECT * FROM users WHERE email = ?";
+            connection.query(query, [email], (err, rows) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(rows[0]);
+                }
+            });
+        });
+        
+        if (!user) {
+            const response = h.response({
+                status: 'fail',
+                message: 'User not found',
+            });
+            response.code(404);
+            return response;
+        }
+        
+        // Hash the newPassword and update the user's password
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await new Promise((resolve, reject) => {
+            const updateQuery = "UPDATE users SET password = ? WHERE email = ?";
+            connection.query(updateQuery, [hashedPassword, email], (err, result) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(result);
+                }
+            });
+        });
+
+        return h.response({
+            status: 'success',
+            message: 'Password reset successfully',
         }).code(200);
     } catch (err) {
         return h.response({
@@ -464,11 +514,14 @@ const genreHandler = async (request, h) => {
         const userLinks = userPaintings.flatMap(painting => painting.image_url);
 
         // Fetch paintings from the dataset bucket based on the genre
-        const [files] = await datasetBucket.getFiles({ prefix: `${genre}/`, maxResults: 10 });
+        const [files] = await datasetBucket.getFiles({ prefix: `${genre}/` });
         const datasetLinks = files.map(file => `https://storage.googleapis.com/${datasetBucket.name}/${file.name}`);
         
+        // Shuffle the combined list of image URLs
+        const shuffledLinks = datasetLinks.sort(() => Math.random() - 0.5);
+
         // Combine the dataset and user paintings
-        const publicLinks = [...userLinks, ...datasetLinks];
+        const publicLinks = [...userLinks, ...shuffledLinks];
 
         return h.response({
             status: 'success',
@@ -711,7 +764,23 @@ const getLikedPaintings = async (request, h) => {
 // Classify paintings using ML model
 const classifyPaintings = async (request, h) => {
     try {
+        const { language } = request.payload;
         const file = request.payload.image;
+
+        if (!language) {
+            return h.response({
+                status: 'fail',
+                message: 'Please provide language',
+            }).code(400);
+        }
+
+        // Validate language input
+        if (language !== 'en' && language !== 'id') {
+            return h.response({
+                status: 'fail',
+                message: 'Language must be either en or id'
+            }).code(400);
+        }
 
         // Validate file input
         if (!file || !file.hapi || !file.hapi.filename) {
@@ -740,7 +809,10 @@ const classifyPaintings = async (request, h) => {
         const { image_types_prediction, confidence } = response.data.data;
         
         // Fetch genre description
-        const genreQuery = 'SELECT * FROM genre_desc WHERE genre = ?';
+        const genreTable = language === 'en' ? 'genre_desc' : 'genre_desc_id';
+        const genreQuery = `SELECT * FROM ${genreTable} WHERE genre = ?`;
+
+        //const genreQuery = 'SELECT * FROM genre_desc WHERE genre = ?';
         const genre = await new Promise((resolve, reject) => {
             connection.query(genreQuery, [image_types_prediction], (err, rows) => {
                 if (err) {
@@ -771,6 +843,7 @@ const classifyPaintings = async (request, h) => {
 module.exports = {
     registerUser,
     loginUser,
+    resetPassword,
     uploadPainting,
     deletePainting,
     homePage,
