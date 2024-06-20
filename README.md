@@ -23,11 +23,11 @@ The ArtNaon-CC team guarantees the consistent integration of different cloud adm
 
 - **Google Cloud Platform**: 
 
-    Google Cloud Platform was used for billing management, storage and database management, application and model deployment
+    Google Cloud Platform was used for billing management, storage and database management, application and model deployment.
     
 - **Postman**: 
         
-    We used Postman in order to test and ensure that the APIs works as intended
+    We used Postman in order to test and ensure that the APIs works as intended.
 
 - **Git/Github**: 
 
