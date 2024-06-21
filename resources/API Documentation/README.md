@@ -273,7 +273,7 @@
 
 ### Classify Paintings (with ML Model)
 - **Method:** POST
-- **URL:** `/classifyPaintings
+- **URL:** `/classifyPaintings`
 - **Request Body:**
     - language: string `en` or `id`
     - image: `file`
